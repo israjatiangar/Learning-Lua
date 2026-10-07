@@ -3,14 +3,18 @@
 ---@field label string
 ---@field completed boolean
 
+---@type string
+local filePath = arg[0] or ""
+
 ---@type table<task>
 local tasksTable = {}
 
 local commandsList = {
 	---@param label string
     add = function(label)
-    	local task = {label, false}
+    	local task = {label = label, completed = false}
         table.insert(tasksTable, task)
+       	print (tasksTable[1].label)
     end,
 
     list = function()
@@ -31,6 +35,16 @@ local commandsList = {
 -- #endregion
 
 -- #region Helper Functions
+local function saveTasks()
+    local location = string.match(filePath, "(.*[/\\])") or ""
+    if next(tasksTable) == nil then
+        return
+    end
+    local saveFile = assert(io.open(location .. "tasksList.sav", "w"))
+    for i = 1, #tasksTable do
+        saveFile:write(tostring(tasksTable[i].completed) .. " " .. tostring(tasksTable[i].label))
+    end
+end
 ---@return table<string>
 local function parseCommand()
     local label = {}
@@ -56,6 +70,7 @@ local function executeCommand(command, argument)
             return
         else
             commandsList.add(argument)
+            saveTasks()
             io.write("Task Added: " .. argument)
             return
         end
