@@ -11,6 +11,6 @@ syntax is a major plus point in my book.
 
 ## Current Project
 
-- **Tasker(Todo app)** (`tasker/Main.lua`) - A simple terminal-based todo app
+- **Tasker(Todo app)** (`tasker/main.lua`) - A simple terminal-based todo app
   generic, but quite good for learning to do functions, daving file reading
   files and getting the hang of the language.
