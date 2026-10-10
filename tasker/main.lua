@@ -5,57 +5,41 @@
 
 ---@type table<task>
 local tasksTable = {}
+-- #endregion
 
-local commandsList = {
-	---@param label string
-    add = function(label)
-    	local task = {label = label, completed = false}
-        table.insert(tasksTable, task)
-        io.write("Task Added: " .. label)
-    end,
-
-    list = function()
-        local titleString = string.format("%-4s %-35s %-12s", "id", "Task Title", "Status")
-        io.write(titleString.."\n")
-        if next(tasksTable) == nil then
-            local emptyTable = string.format("%-4s %-35s %-12s", "--", "No Tasks", "--")
-            io.write(emptyTable.."\n")
-        end
-        for i = 1, #tasksTable do
-            local label = tasksTable[i].label
-            local status = tasksTable[i].completed == true and "Done" or "To Do"
-            local formattedString = string.format("%-4s %-35s %-12s", i, label, status)
-            io.write(formattedString.."\n")
-        end
-    end,
-
+-- #region Main Functions
+local errorHandling = {
     ---@param number number
-    delete = function(number)
-    	io.write("Task Deleted: " .. tasksTable[number].label)
-    	table.remove(tasksTable, number)
+	---@return number
+    isOutOfRange = function(number)
+        if tasksTable[number] == nil then
+            io.write("Number out of the range of todo list")
+            os.exit(1)
+        end
+        return number
     end,
 
-    ---@param number number
-    check = function(number)
-        if tasksTable[number].completed == true then
-            io.write('Task already completed: ' .. tasksTable[number].label)
-            return
+    ---@param argument string
+    ---@return number
+    isArgumentANumber = function(argument)
+    	local number = tonumber(argument)
+        if type(number) ~= "number" then
+            io.write("This command expected a number got none.")
+            os.exit(1)
         end
-        io.write("Task Marked Done: " .. tasksTable[number].label)
-        tasksTable[number].completed = true
+        return number
     end,
 
-    ---@param number number
-    uncheck = function(number)
-        if tasksTable[number].completed == false then
-            io.write('Task already in progress: ' .. tasksTable[number].label)
-            return
-        end
-        io.write("Task Marked Inprogress: " .. tasksTable[number].label)
-        tasksTable[number].completed = false
+    noCommand = function()
+        io.write("The app expected a command got none.\nType help for all commands")
+        os.exit(1)
+    end,
+
+    unrecognisedCommand = function()
+        io.write("Unrecognised command.\nType help for all commands")
+        os.exit(1)
     end,
 }
-
 local fileFunctions = {
     location = string.match(arg[0] or "", "(.*[/\\])") or "",
 	saveTasks = function(self)
@@ -83,37 +67,118 @@ local fileFunctions = {
     end
 }
 
-local errorHandling = {
-    ---@param number number
-	---@return number
-    isOutOfRange = function(number)
-        if tasksTable[number] == nil then
-            io.write("Number out of the range of todo list")
-            os.exit()
+local commandsList = {
+	---@param label string
+    add = function(label)
+	   	if label == nil or label == "" then
+	        io.write("Name Your Task:\n")
+	        label = io.read()
+	    end
+    	local task = {label = label, completed = false}
+        table.insert(tasksTable, task)
+        io.write("Task Added: " .. label)
+        fileFunctions.saveTasks(fileFunctions)
+    end,
+
+    list = function()
+        local titleString = string.format("%-4s %-12s %-35s\n", "id", "Status", "Task Title")
+        io.write(titleString.."\n")
+        if next(tasksTable) == nil then
+            local emptyTable = string.format("%-4s %-12s %-35s\n", "--", "--", "No Tasks")
+            io.write(emptyTable.."\n")
         end
-        return number
+        for i = 1, #tasksTable do
+            local label = tasksTable[i].label
+            local status = tasksTable[i].completed == true and "Done" or "To Do"
+            local formattedString = string.format("%-4s %-12s %-35s\n", i, status,label)
+            io.write(formattedString.."\n")
+        end
     end,
 
     ---@param argument string
-    ---@return number
-    isArgumentANumber = function(argument)
-    	local number = tonumber(argument)
-        if type(number) ~= "number" then
-            io.write("This command expected a number got none.")
-            os.exit()
+    delete = function(argument)
+	   	local number = errorHandling.isArgumentANumber(argument)
+	    number = errorHandling.isOutOfRange(number)
+
+    	io.write("Task Deleted: " .. tasksTable[number].label)
+    	table.remove(tasksTable, number)
+     	fileFunctions.saveTasks(fileFunctions)
+
+    end,
+
+    ---@param argument string
+    check = function(argument)
+   		local number = errorHandling.isArgumentANumber(argument)
+     	number = errorHandling.isOutOfRange(number)
+
+        if tasksTable[number].completed == true then
+            io.write('Task already completed: ' .. tasksTable[number].label)
+            return
         end
-        return number
+        io.write("Task Marked Done: " .. tasksTable[number].label)
+        tasksTable[number].completed = true
+        fileFunctions.saveTasks(fileFunctions)
     end,
 
-    noCommand = function()
-        io.write("The app expected a command got none.\nType help for all commands")
-        os.exit()
+    ---@param argument string
+    uncheck = function(argument)
+   		local number = errorHandling.isArgumentANumber(argument)
+       	number = errorHandling.isOutOfRange(number)
+
+        if tasksTable[number].completed == false then
+            io.write('Task already in progress: ' .. tasksTable[number].label)
+            return
+        end
+        io.write("Task Marked Inprogress: " .. tasksTable[number].label)
+        tasksTable[number].completed = false
+        fileFunctions.saveTasks(fileFunctions)
     end,
 
-    unrecognisedCommand = function()
-        io.write("Unrecognised command.\nType help for all commands")
-        os.exit()
-    end,
+    help = function()
+        local help = {
+          { "Add", {
+              "Type Add to add an item to the todo list.",
+              "Example: <add> <Name of Task>",
+              "Don't panic if you forget. The app will give you another chance to add a task.",
+          }},
+          { "Delete", {
+              "Lets you delete an item from the todo list.",
+              "Example: <delete> <Expects: id number of task>",
+          }},
+          { "Check", {
+              "Lets you change the status of a task to complete.",
+              "Example: <check> <Expects: id number of task>",
+          }},
+          { "Uncheck", {
+              "Lets you change the status of a task to in progress.",
+              "Example: <uncheck> <Expects: id number of task>",
+          }},
+          { "List", {
+              "Gives you a list of tasks with details such as ID, status, and task name.",
+              "Example: <list> <ignores all arguments>",
+          }},
+          { "Help", {
+              "You are here. This command gives you a list of commands accepted by this CLI app.",
+              "Example: <help> <ignores all arguments>",
+          }},
+          { "Extra Info", {
+              "1. All commands are case insensitive. Yes, you can type like this: deLEtE",
+              "2. Delete, Check, and Uncheck expect the id shown by the list command.",
+          }},
+        }
+        local stringFormat = "%-15s %-50s\n"
+        for _, entry in ipairs(help) do
+            local name = entry[1]
+            local text = entry[2]
+            local first = true
+            io.write("\n")
+            for i in ipairs(text) do
+                io.write(string.format(stringFormat, first and name or "", text[i]))
+                first = false
+            end
+        end
+       	io.write("\n")
+    end
 }
 -- #endregion
 
@@ -133,53 +198,14 @@ end
 ---@param command string
 ---@param argument string
 local function executeCommand(command, argument)
+	command = string.lower(command)
     if command == "" then
         errorHandling.noCommand()
     end
-
-    if command == "add" then
-        if argument == nil or argument == "" then
-            io.write("Name Your Task:\n")
-            argument = io.read()
-        end
-
-        commandsList.add(argument)
-        fileFunctions.saveTasks(fileFunctions)
-        return
+    if commandsList[command] == nil then
+    	errorHandling.unrecognisedCommand()
     end
-
-    if command == "delete" then
-        local number = errorHandling.isArgumentANumber(argument)
-        number = errorHandling.isOutOfRange(number)
-
-        commandsList.delete(number)
-        fileFunctions.saveTasks(fileFunctions)
-        return
-    end
-
-    if command == "check" then
-        local number = errorHandling.isArgumentANumber(argument)
-        number = errorHandling.isOutOfRange(number)
-
-        commandsList.check(number)
-        fileFunctions.saveTasks(fileFunctions)
-        return
-    end
-
-    if command == "uncheck" then
-    	local number = errorHandling.isArgumentANumber(argument)
-        number = errorHandling.isOutOfRange(number)
-
-        commandsList.uncheck(number)
-        fileFunctions.saveTasks(fileFunctions)
-        return
-    end
-
-    if command == "list" then
-        commandsList.list()
-        return
-    end
-    errorHandling.unrecognisedCommand()
+    commandsList[command](argument)
 end
 -- #endregion
 
