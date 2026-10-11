@@ -81,16 +81,24 @@ local commandsList = {
     end,
 
     list = function()
-        local titleString = string.format("%-4s %-12s %-35s\n", "id", "Status", "Task Title")
+        local stringFormat = "%-4s %-12s %-35s\n"
+        for i = 1, 20,1 do
+          	io.write("=")
+        	if i==10 then
+         		io.write(" Todo List ")
+         	end
+        end
+         io.write("\n")
+        local titleString = string.format(stringFormat, "id", "Status", "Task Title")
         io.write(titleString.."\n")
         if next(tasksTable) == nil then
-            local emptyTable = string.format("%-4s %-12s %-35s\n", "--", "--", "No Tasks")
+            local emptyTable = string.format(stringFormat, "--", "--", "No Tasks")
             io.write(emptyTable.."\n")
         end
         for i = 1, #tasksTable do
             local label = tasksTable[i].label
             local status = tasksTable[i].completed == true and "Done" or "To Do"
-            local formattedString = string.format("%-4s %-12s %-35s\n", i, status,label)
+            local formattedString = string.format(stringFormat, i, status,label)
             io.write(formattedString.."\n")
         end
     end,
