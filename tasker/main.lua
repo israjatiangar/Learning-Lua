@@ -4,7 +4,7 @@
 ---@field label string
 ---@field completed boolean
 
----@type table<task>
+---@type table[task]
 local tasksTable = {}
 -- #endregion
 
@@ -22,7 +22,7 @@ local errorHandling = {
 	end,
 
 	---@param argument string
-	---@return number
+	---@return number | void
 	isArgumentANumber = function(argument)
 		local number = tonumber(argument)
 		if type(number) ~= "number" then
@@ -56,11 +56,11 @@ local fileFunctions = {
 		local file = io.open(loadFile, "r")
 		if file == nil then return end
 		local taskList = {}
-		for l in file:lines() do
+		for line in file:lines() do
 			---@type task
 			local task = {
-				completed = string.lower(string.match(l, "%S+")) == "true" and true or false,
-				label = string.match(l, "%S+ (.*)"),
+				completed = string.lower(string.match(line, "%S+")) == "true" and true or false
+				label = string.match(line, "%S+ (.*)"),
 			}
 			table.insert(taskList, task)
 		end
